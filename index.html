@@ -1,1 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Thailand Population Density Map</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        #myDiv { width: 100vw; height: 100vh; }
+    </style>
+</head>
+<body>
+
+    <div id="myDiv"></div>
+
+    <script>
+        // 1. URL ของไฟล์ GeoJSON (ขอบเขตจังหวัด)
+        const geojsonUrl = 'https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json';
+
+        // 2. ฟังก์ชันดึงข้อมูลและสร้างกราฟ
+        fetch(geojsonUrl)
+            .then(response => response.json())
+            .then(geojson => {
+                
+                // ดึงรายชื่อจังหวัดจากไฟล์ GeoJSON
+                const provinces = geojson.features.map(feature => feature.properties.name);
+
+                // สร้างข้อมูลจำลอง (สุ่มตัวเลขประชากร)
+                // *ในการใช้งานจริง คุณสามารถแก้ส่วนนี้ให้ดึงข้อมูลจาก API อื่นได้*
+                const populationData = provinces.map(name => {
+                    let pop = Math.floor(Math.random() * (1500000 - 200000) + 200000);
+                    if (name === 'Bangkok') pop = 6000000; // ปรับให้ กทม. สูงพิเศษ
+                    return pop;
+                });
+
+                // 3. ตั้งค่ากราฟ (Data & Layout)
+                const data = [{
+                    type: "choroplethmapbox",
+                    geojson: geojson,
+                    locations: provinces,
+                    featureidkey: "properties.name", // Key ที่ตรงกับชื่อจังหวัดใน GeoJSON
+                    z: populationData,
+                    colorscale: "Reds",
+                    zmin: 0,
+                    zmax: 2000000,
+                    marker: { opacity: 0.6 },
+                    text: provinces, // ข้อความที่จะโชว์ตอน Hover
+                    hovertemplate: 
+                        "<b>%{text}</b><br>" +
+                        "Population: %{z:,}<extra></extra>"
+                }];
+
+                const layout = {
+                    title: {
+                        text: 'Thailand Population Density (Live JS)',
+                        y: 0.95
+                    },
+                    mapbox: {
+                        style: "carto-positron", // แบบแผนที่ (ไม่ต้องใช้ Token)
+                        center: { lat: 13.736717, lon: 100.523186 },
+                        zoom: 5
+                    },
+                    margin: { r: 0, t: 0, l: 0, b: 0 }
+                };
+
+                // 4. สั่งวาดกราฟ
+                Plotly.newPlot('myDiv', data, layout, {responsive: true});
+            })
+            .catch(error => console.error('Error loading GeoJSON:', error));
+    </script>
+
+</body>
+</html>
 
