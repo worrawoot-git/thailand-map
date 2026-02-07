@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Thailand Official Population Map 2024 (Latest)</title>
+    <title>Thailand Official Population Map 2024 (Fixed)</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -32,55 +32,83 @@
     <div id="myDiv"></div>
 
     <script>
-        // ข้อมูลจำนวนราษฎรรายจังหวัด ณ วันที่ 31 ธันวาคม 2567 (ประกาศปี 2568)
-        // แหล่งข้อมูล: กรมการปกครอง (DOPA)
+        // แก้ไขชื่อ Key ให้ตรงกับไฟล์ GeoJSON (apisit/thailand.json)
         const realPopulationDB = {
-            "Bangkok": 5455020,          // กรุงเทพมหานคร
-            "Nakhon Ratchasima": 2620172, // นครราชสีมา
-            "Ubon Ratchathani": 1867942,  // อุบลราชธานี
-            "Chiang Mai": 1799019,        // เชียงใหม่
-            "Khon Kaen": 1772381,         // ขอนแก่น
-            "Chon Buri": 1635525,         // ชลบุรี
-            "Buriram": 1563600,           // บุรีรัมย์ (ประมาณการ)
-            "Udon Thani": 1555000,        // อุดรธานี (ประมาณการ)
-            "Nakhon Si Thammarat": 1540000, // นครศรีธรรมราช (ประมาณการ)
-            "Songkhla": 1428000,          // สงขลา
-            "Si Sa Ket": 1445000,         // ศรีสะเกษ
-            "Surin": 1368000,             // สุรินทร์
-            "Roi Et": 1275519,            // ร้อยเอ็ด
-            "Samut Prakan": 1370000,      // สมุทรปราการ
-            "Chiang Rai": 1298000,        // เชียงราย
-            "Nonthaburi": 1310000,        // นนทบุรี
-            "Sakon Nakhon": 1140000,      // สกลนคร
-            "Chaiyaphum": 1105008,        // ชัยภูมิ
-            "Kalasin": 962444,            // กาฬสินธุ์
-            "Nakhon Pathom": 925000,      // นครปฐม
-            "Kanchanaburi": 896351,       // กาญจนบุรี
-            "Rayong": 782171,             // ระยอง
-            "Chachoengsao": 733131,       // ฉะเชิงเทรา
-            "Kamphaeng Phet": 700862,     // กำแพงเพชร
-            "Yala": 552974,               // ยะลา
-            "Chanthaburi": 536388,        // จันทบุรี
-            "Chumphon": 504354,           // ชุมพร
-            "Krabi": 483855,              // กระบี่
-            "Chai Nat": 313392,           // ชัยนาท
-            "Ranong": 192927,             // ระนอง
-            "Samut Songkhram": 186784,    // สมุทรสงคราม (จังหวัดที่ประชากรน้อยที่สุด)
-            // ... จังหวัดอื่นๆ จะใช้ฐานข้อมูลปี 66 ที่ใกล้เคียงมากแทน ...
-             "Phra Nakhon Si Ayutthaya": 834082, "Phichit": 521401, "Nakhon Phanom": 717040, 
-             "Saraburi": 648321, "Loei": 638819, "Phitsanulok": 844494, "Trang": 638206, 
-             "Phetchaburi": 483329, "Sukhothai": 581374, "Ratchaburi": 865807, 
-             "Prachuap Khiri Khan": 560408, "Phayao": 455496, "Nan": 476727, 
-             "Uttaradit": 441052, "Phrae": 430669, "Nong Bua Lam Phu": 509489, 
-             "Yasothon": 531542, "Tak": 684140, "Samut Sakhon": 602227, 
-             "Mukdahan": 351658, "Sa Kaeo": 561938, "Lamphun": 399187, 
-             "Phangnga": 267994, "Phuket": 420993, "Narathiwat": 819669, 
-             "Pattani": 736733, "Satun": 327734, "Trat": 226922, 
-             "Sing Buri": 202657, "Ang Thong": 272587, "Nakhon Nayok": 260406, 
-             "Uthai Thani": 322624, "Prachin Buri": 498456, "Amnat Charoen": 372137, 
-             "Bueng Kan": 420280, "Phetchabun": 973386, "Maha Sarakham": 944605,
-             "Suphan Buri": 825595, "Nong Khai": 515433, "Lop Buri": 735293, "Lampang": 718790,
-             "Nakhon Sawan": 1021827, "Surat Thani": 1075788, "Pathum Thani": 1219199
+            "Bangkok Metropolis": 5455020, // ** แก้จาก Bangkok เฉยๆ เป็น Bangkok Metropolis **
+            "Nakhon Ratchasima": 2620172,
+            "Ubon Ratchathani": 1867942,
+            "Chiang Mai": 1799019,
+            "Khon Kaen": 1772381,
+            "Chon Buri": 1635525,
+            "Buriram": 1563600,
+            "Udon Thani": 1555000,
+            "Nakhon Si Thammarat": 1540000,
+            "Songkhla": 1428000,
+            "Si Sa Ket": 1445000,
+            "Surin": 1368000,
+            "Roi Et": 1275519,
+            "Samut Prakan": 1370000,
+            "Chiang Rai": 1298000,
+            "Nonthaburi": 1310000,
+            "Sakon Nakhon": 1140000,
+            "Chaiyaphum": 1105008,
+            "Kalasin": 962444,
+            "Nakhon Pathom": 925000,
+            "Kanchanaburi": 896351,
+            "Rayong": 782171,
+            "Chachoengsao": 733131,
+            "Kamphaeng Phet": 700862,
+            "Yala": 552974,
+            "Chanthaburi": 536388,
+            "Chumphon": 504354,
+            "Krabi": 483855,
+            "Chai Nat": 313392,
+            "Ranong": 192927,
+            "Samut Songkhram": 186784,
+            "Phra Nakhon Si Ayutthaya": 834082, 
+            "Phichit": 521401, 
+            "Nakhon Phanom": 717040, 
+            "Saraburi": 648321, 
+            "Loei": 638819, 
+            "Phitsanulok": 844494, 
+            "Trang": 638206, 
+            "Phetchaburi": 483329, 
+            "Sukhothai": 581374, 
+            "Ratchaburi": 865807, 
+            "Prachuap Khiri Khan": 560408, 
+            "Phayao": 455496, 
+            "Nan": 476727, 
+            "Uttaradit": 441052, 
+            "Phrae": 430669, 
+            "Nong Bua Lam Phu": 509489, 
+            "Yasothon": 531542, 
+            "Tak": 684140, 
+            "Samut Sakhon": 602227, 
+            "Mukdahan": 351658, 
+            "Sa Kaeo": 561938, 
+            "Lamphun": 399187, 
+            "Phangnga": 267994, 
+            "Phuket": 420993, 
+            "Narathiwat": 819669, 
+            "Pattani": 736733, 
+            "Satun": 327734, 
+            "Trat": 226922, 
+            "Sing Buri": 202657, 
+            "Ang Thong": 272587, 
+            "Nakhon Nayok": 260406, 
+            "Uthai Thani": 322624, 
+            "Prachin Buri": 498456, 
+            "Amnat Charoen": 372137, 
+            "Bueng Kan": 420280, 
+            "Phetchabun": 973386, 
+            "Maha Sarakham": 944605,
+            "Suphan Buri": 825595, 
+            "Nong Khai": 515433, 
+            "Lop Buri": 735293, 
+            "Lampang": 718790,
+            "Nakhon Sawan": 1021827, 
+            "Surat Thani": 1075788, 
+            "Pathum Thani": 1219199
         };
 
         const geojsonUrl = 'https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json';
@@ -93,8 +121,10 @@
 
                 const populationData = provinces.map(name => {
                     const pop = realPopulationDB[name];
+                    // เพิ่ม Console Log เพื่อเช็คว่าจังหวัดไหนยังเป็น 0 (ชื่อไม่ตรง)
                     if (pop === undefined) {
-                        return 0; // กันพลาด
+                        console.log("ไม่พบข้อมูลจังหวัด: " + name); 
+                        return 0;
                     }
                     return pop;
                 });
@@ -105,29 +135,22 @@
                     locations: provinces,
                     featureidkey: "properties.name",
                     z: populationData,
-                    
-                    // ปรับโทนสีให้ไล่ระดับสวยงาม (เหลือง -> ส้ม -> แดง -> ม่วงเข้ม)
                     colorscale: [
-                        [0, '#FFEDA0'],       // น้อย (เหลืองอ่อน)
+                        [0, '#FFEDA0'],
                         [0.2, '#FED976'],
                         [0.4, '#FEB24C'],
                         [0.6, '#FD8D3C'],
                         [0.8, '#E31A1C'],
-                        [1.0, '#800026']      // มากที่สุด (แดงเลือดหมู)
+                        [1.0, '#800026']
                     ],
-                    
-                    zmin: 100000,   // ตั้งค่าต่ำสุด
-                    zmax: 3000000,  // ตั้งค่าสูงสุดที่ 3 ล้าน (เพื่อให้ กทม. เข้มสุด และจังหวัดใหญ่ๆ เห็นสีชัด)
-                    
+                    zmin: 0,
+                    zmax: 3000000,
                     marker: { opacity: 0.7, line: { width: 1, color: 'white' } },
                     text: provinces,
-                    hovertemplate: 
-                        "<b>%{text}</b><br>" +
-                        "ประชากร: %{z:,} คน<extra></extra>"
+                    hovertemplate: "<b>%{text}</b><br>ประชากร: %{z:,} คน<extra></extra>"
                 }];
 
                 const layout = {
-                    // ซ่อน Title เดิมของ Plotly เพราะเราสร้าง Header สวยๆ ไว้ข้างบนแล้ว
                     margin: { r: 0, t: 0, l: 0, b: 0 },
                     mapbox: {
                         style: "carto-positron",
