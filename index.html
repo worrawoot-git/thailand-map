@@ -2,49 +2,97 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Thailand Population Map 2024 (Fixed Layout)</title>
+    <title>Thailand Population & Density Map 2024 (Pro)</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; padding: 0; font-family: 'Sarabun', sans-serif; }
+        body { margin: 0; padding: 0; font-family: 'Sarabun', sans-serif; background: #f4f6f9; }
         #myDiv { width: 100vw; height: 100vh; }
 
-        /* --- ปรับปรุง: ขยับป้ายมาทางซ้าย ไม่ให้ทับแถบสี --- */
+        /* --- กล่องควบคุม (Control Panel) มุมซ้ายบน --- */
+        .control-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            width: 220px;
+        }
+
+        .control-panel h3 { margin: 0 0 15px 0; font-size: 16px; color: #2c3e50; }
+        
+        /* สไตล์ Dropdown */
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: 'Sarabun', sans-serif;
+            font-size: 14px;
+            outline: none;
+        }
+
+        /* สไตล์ปุ่ม Export */
+        .btn-export {
+            width: 100%;
+            padding: 10px;
+            background-color: #004aad; /* สีแบรนด์ (น้ำเงิน) */
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Sarabun', sans-serif;
+            font-weight: bold;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-export:hover { background-color: #003380; }
+
+        /* --- ป้ายชื่อ (ขวาล่าง) --- */
         .map-title {
             position: absolute;
             bottom: 40px;
-            right: 120px;  /* ขยับจากขอบขวามา 120px (หลบแถบสี) */
-            z-index: 1000;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 12px 18px;
+            right: 50px; /* ขยับให้สมดุล */
+            z-index: 900;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 20px;
             border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             text-align: right;
-            max-width: 300px;
+            border-left: 5px solid #004aad; /* แถบสีด้านข้าง */
         }
-        
         .map-title h2 { margin: 0; font-size: 18px; color: #2c3e50; }
         .map-title div { font-size: 12px; color: #7f8c8d; margin-top: 5px; }
 
-        /* กล่องแจ้งเตือน (เผื่อยังมีจังหวัดไหนชื่อไม่ตรง) */
         #error-box {
-            position: absolute;
-            bottom: 30px;
-            left: 20px;
-            z-index: 1000;
-            background: rgba(192, 57, 43, 0.9);
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            display: none; 
-            font-size: 12px;
+            position: absolute; bottom: 30px; left: 20px; z-index: 1000;
+            background: rgba(192, 57, 43, 0.9); color: white;
+            padding: 10px; border-radius: 5px; display: none; font-size: 12px;
         }
     </style>
 </head>
 <body>
 
+    <div class="control-panel">
+        <h3>🗺️ เลือกข้อมูลแสดงผล</h3>
+        <select id="dataSelector" onchange="updateMapMode()">
+            <option value="pop">จำนวนประชากร (คน)</option>
+            <option value="density">ความหนาแน่น (คน/ตร.กม.)</option>
+        </select>
+        <button class="btn-export" onclick="exportMap()">
+            📸 บันทึกรูปภาพ
+        </button>
+    </div>
+
     <div class="map-title">
-        <h2>ประชากรไทย 2567</h2>
+        <h2 id="titleText">ประชากรไทย 2567</h2>
         <div>กรมการปกครอง (31 ธ.ค. 67)</div>
     </div>
 
@@ -52,113 +100,183 @@
     <div id="myDiv"></div>
 
     <script>
-        // ฐานข้อมูลประชากร (เพิ่ม "Buri Ram" และเช็คชื่ออื่นๆ)
-        const realPopulationDB = {
-            // --- แก้ไขจุดที่มีปัญหา (Buriram) ---
-            "Buri Ram": 1563600,  // ชื่อใน GeoJSON มักจะเป็นแบบนี้
-            "Buriram": 1563600,   // ดักไว้เผื่อ
-            
-            // --- ภาคกลาง & กทม ---
+        // 1. ฐานข้อมูลประชากร (Population)
+        const populationDB = {
             "Bangkok": 5455020, "Bangkok Metropolis": 5455020,
-            "Samut Prakan": 1370000, "Nonthaburi": 1310000,
-            "Pathum Thani": 1219199, "Nakhon Pathom": 925000,
-            "Samut Sakhon": 602227, "Phra Nakhon Si Ayutthaya": 834082, "Ayutthaya": 834082,
-            "Saraburi": 648321, "Lop Buri": 735293, "Sing Buri": 202657,
-            "Chai Nat": 313392, "Ang Thong": 272587, "Nakhon Nayok": 260406,
-            "Samut Songkhram": 186784, "Suphan Buri": 825595, "Kanchanaburi": 896351,
-            "Ratchaburi": 865807, "Phetchaburi": 483329, "Prachuap Khiri Khan": 560408,
-
-            // --- ภาคเหนือ ---
-            "Chiang Mai": 1799019, "Chiang Rai": 1298000, "Lampang": 718790,
-            "Lamphun": 399187, "Phayao": 455496, "Nan": 476727,
-            "Phrae": 430669, "Mae Hong Son": 286000, "Uttaradit": 441052,
-            "Tak": 684140, "Sukhothai": 581374, "Phitsanulok": 844494,
-            "Phichit": 521401, "Kamphaeng Phet": 700862, "Phetchabun": 973386,
-            "Nakhon Sawan": 1021827, "Uthai Thani": 322624,
-
-            // --- ภาคอีสาน ---
-            "Nakhon Ratchasima": 2620172, "Khon Kaen": 1772381, "Ubon Ratchathani": 1867942,
-            "Udon Thani": 1555000, "Si Sa Ket": 1445000, "Surin": 1368000,
-            "Roi Et": 1275519, "Chaiyaphum": 1105008, "Sakon Nakhon": 1140000,
-            "Nakhon Phanom": 717040, "Kalasin": 962444, "Maha Sarakham": 944605,
-            "Mukdahan": 351658, "Yasothon": 531542, "Amnat Charoen": 372137,
-            "Nong Bua Lam Phu": 509489, "Nong Khai": 515433, "Loei": 638819,
-            "Bueng Kan": 420280,
-
-            // --- ภาคตะวันออก ---
-            "Chon Buri": 1635525, "Rayong": 782171, "Chachoengsao": 733131,
-            "Prachin Buri": 498456, "Sa Kaeo": 561938, "Chanthaburi": 536388, "Trat": 226922,
-
-            // --- ภาคใต้ ---
-            "Nakhon Si Thammarat": 1540000, "Songkhla": 1428000, "Surat Thani": 1075788,
-            "Narathiwat": 819669, "Pattani": 736733, "Yala": 552974,
-            "Trang": 638206, "Phatthalung": 523000, "Satun": 327734,
-            "Chumphon": 504354, "Ranong": 192927, "Phangnga": 267994, "Phang Nga": 267994,
-            "Phuket": 420993, "Krabi": 483855
+            "Nakhon Ratchasima": 2620172, "Ubon Ratchathani": 1867942, "Chiang Mai": 1799019,
+            "Khon Kaen": 1772381, "Chon Buri": 1635525, "Buri Ram": 1563600, "Buriram": 1563600,
+            "Udon Thani": 1555000, "Nakhon Si Thammarat": 1540000, "Songkhla": 1428000,
+            "Si Sa Ket": 1445000, "Surin": 1368000, "Roi Et": 1275519, "Samut Prakan": 1370000,
+            "Chiang Rai": 1298000, "Nonthaburi": 1310000, "Sakon Nakhon": 1140000,
+            "Chaiyaphum": 1105008, "Kalasin": 962444, "Nakhon Pathom": 925000, "Kanchanaburi": 896351,
+            "Rayong": 782171, "Chachoengsao": 733131, "Kamphaeng Phet": 700862, "Yala": 552974,
+            "Chanthaburi": 536388, "Chumphon": 504354, "Krabi": 483855, "Chai Nat": 313392,
+            "Ranong": 192927, "Samut Songkhram": 186784, "Phra Nakhon Si Ayutthaya": 834082, "Ayutthaya": 834082,
+            "Phichit": 521401, "Nakhon Phanom": 717040, "Saraburi": 648321, "Loei": 638819,
+            "Phitsanulok": 844494, "Trang": 638206, "Phetchaburi": 483329, "Sukhothai": 581374,
+            "Ratchaburi": 865807, "Prachuap Khiri Khan": 560408, "Phayao": 455496, "Nan": 476727,
+            "Uttaradit": 441052, "Phrae": 430669, "Nong Bua Lam Phu": 509489, "Yasothon": 531542,
+            "Tak": 684140, "Samut Sakhon": 602227, "Mukdahan": 351658, "Sa Kaeo": 561938,
+            "Lamphun": 399187, "Phangnga": 267994, "Phang Nga": 267994, "Phuket": 420993,
+            "Narathiwat": 819669, "Pattani": 736733, "Satun": 327734, "Trat": 226922,
+            "Sing Buri": 202657, "Ang Thong": 272587, "Nakhon Nayok": 260406, "Uthai Thani": 322624,
+            "Prachin Buri": 498456, "Amnat Charoen": 372137, "Bueng Kan": 420280, "Phetchabun": 973386,
+            "Maha Sarakham": 944605, "Suphan Buri": 825595, "Nong Khai": 515433, "Lop Buri": 735293,
+            "Lampang": 718790, "Nakhon Sawan": 1021827, "Surat Thani": 1075788, "Pathum Thani": 1219199,
+            "Mae Hong Son": 286000, "Phatthalung": 523000
         };
 
+        // 2. ฐานข้อมูลพื้นที่ (Area - sq.km) โดยประมาณ
+        const areaDB = {
+            "Bangkok": 1569, "Bangkok Metropolis": 1569,
+            "Nakhon Ratchasima": 20494, "Chiang Mai": 20107, "Kanchanaburi": 19483, "Tak": 16406,
+            "Ubon Ratchathani": 15744, "Surat Thani": 12891, "Chaiyaphum": 12778, "Mae Hong Son": 12681,
+            "Phetchabun": 12668, "Lampang": 12534, "Udon Thani": 11730, "Chiang Rai": 11678,
+            "Nan": 11472, "Loei": 11424, "Khon Kaen": 10886, "Phitsanulok": 10815,
+            "Buriram": 10322, "Buri Ram": 10322, "Nakhon Si Thammarat": 9942, "Sakon Nakhon": 9605,
+            "Nakhon Sawan": 9597, "Ratchaburi": 5196, "Trang": 4917, "Kamphaeng Phet": 8607,
+            "Sisaket": 8840, "Si Sa Ket": 8840, "Roi Et": 8299, "Surin": 8124, "Uttaradit": 7838,
+            "Songkhla": 7393, "Kalasin": 6946, "Sukhothai": 6596, "Phayao": 6335,
+            "Prachuap Khiri Khan": 6367, "Chanthaburi": 6338, "Phetchaburi": 6225, "Chachoengsao": 5351,
+            "Chumphon": 6009, "Phrae": 6538, "Maha Sarakham": 5291, "Sa Kaeo": 7195,
+            "Nakhon Phanom": 5512, "Lop Buri": 6199, "Suphan Buri": 5358, "Chon Buri": 4363, "Chonburi": 4363,
+            "Rayong": 3552, "Krabi": 4708, "Phichit": 4531, "Yala": 4521, "Lamphun": 4505,
+            "Narathiwat": 4475, "Chai Nat": 2469, "Nong Khai": 3027, "Bueng Kan": 4305,
+            "Phangnga": 4170, "Phang Nga": 4170, "Phatthalung": 3424, "Nong Bua Lam Phu": 3859,
+            "Saraburi": 3576, "Yasothon": 4161, "Trat": 2819, "Prachin Buri": 4762,
+            "Satun": 2478, "Ranong": 3298, "Mukdahan": 4339, "Pattani": 1940,
+            "Phra Nakhon Si Ayutthaya": 2556, "Ayutthaya": 2556, "Nakhon Nayok": 2122,
+            "Phuket": 543, "Pathum Thani": 1525, "Samut Prakan": 1004, "Samut Sakhon": 872,
+            "Uthai Thani": 6730, "Amnat Charoen": 3161, "Nonthaburi": 622, "Ang Thong": 968,
+            "Sing Buri": 822, "Samut Songkhram": 416
+        };
+
+        // ตัวแปร Global สำหรับเก็บข้อมูลแผนที่
+        let globalGeojson = null;
+        let globalProvinces = [];
+
+        // ฟังก์ชันคำนวณข้อมูลตามโหมดที่เลือก
+        function getMapData(mode) {
+            const dataValues = [];
+            const hoverTexts = [];
+
+            globalProvinces.forEach(name => {
+                const cleanName = name.trim();
+                const pop = populationDB[cleanName] || 0;
+                const area = areaDB[cleanName] || 1; // กันหารด้วย 0
+                
+                let value = 0;
+                let text = "";
+
+                // คำนวณความหนาแน่น (Density)
+                const density = (pop / area).toFixed(2);
+
+                if (mode === 'pop') {
+                    value = pop;
+                    // Hover โชว์ทั้ง 2 ค่าเสมอ เพื่อประโยชน์สูงสุด
+                    text = `<b>${name}</b><br>👥 ประชากร: ${pop.toLocaleString()} คน<br>📐 พื้นที่: ${area.toLocaleString()} ตร.กม.<br>📊 หนาแน่น: ${density} คน/ตร.กม.`;
+                } else {
+                    value = parseFloat(density);
+                    text = `<b>${name}</b><br>📊 หนาแน่น: ${density} คน/ตร.กม.<br>👥 ประชากร: ${pop.toLocaleString()} คน`;
+                }
+
+                dataValues.push(value);
+                hoverTexts.push(text);
+            });
+
+            return { values: dataValues, texts: hoverTexts };
+        }
+
+        // ฟังก์ชันวาดแผนที่
+        function drawMap(mode) {
+            const mapData = getMapData(mode);
+
+            // ตั้งค่าสี:
+            // ถ้าเป็น 'pop' ใช้โทนน้ำเงิน (Brand Blue)
+            // ถ้าเป็น 'density' ใช้โทนส้ม-แดง (เพื่อความชัดเจนของความหนาแน่น)
+            let colorScale = [];
+            let zMax = 0;
+            let title = "";
+
+            if (mode === 'pop') {
+                // โทนสีน้ำเงิน (Professional Blue Gradient)
+                colorScale = [
+                    [0, '#e3f2fd'], [0.2, '#90caf9'], [0.4, '#42a5f5'],
+                    [0.6, '#1e88e5'], [0.8, '#1565c0'], [1.0, '#0d47a1'] // น้ำเงินเข้มสุด
+                ];
+                zMax = 3000000;
+                title = "ประชากรไทย 2567";
+            } else {
+                // โทนสีแดง-ส้ม (Density Heatmap)
+                colorScale = [
+                    [0, '#fff3e0'], [0.2, '#ffcc80'], [0.4, '#ffb74d'],
+                    [0.6, '#ff9800'], [0.8, '#f57c00'], [1.0, '#e65100']
+                ];
+                zMax = 1500; // ตัดที่ 1500 เพื่อให้เห็นความต่างของจังหวัดอื่น (เพราะ กทม. โดดไป 3000+)
+                title = "ความหนาแน่น (คน/ตร.กม.)";
+            }
+
+            // อัปเดตชื่อหัวข้อ
+            document.getElementById('titleText').innerText = title;
+
+            const data = [{
+                type: "choroplethmapbox",
+                geojson: globalGeojson,
+                locations: globalProvinces,
+                featureidkey: "properties.name",
+                z: mapData.values,
+                colorscale: colorScale,
+                zmin: 0,
+                zmax: zMax,
+                marker: { opacity: 0.8, line: { width: 0.5, color: 'white' } },
+                text: mapData.texts,
+                hovertemplate: "%{text}<extra></extra>"
+            }];
+
+            const layout = {
+                margin: { r: 0, t: 0, l: 0, b: 0 },
+                mapbox: {
+                    style: "carto-positron", // พื้นหลังสะอาดตา
+                    center: { lat: 13.736717, lon: 100.523186 },
+                    zoom: 5.2
+                },
+                // ซ่อน Modebar เดิมของ Plotly เพื่อใช้ปุ่มของเราแทน
+                modebar: { displayModeBar: false } 
+            };
+            
+            // ใช้ react แทน newPlot เพื่อการอัปเดตที่ลื่นไหล
+            Plotly.react('myDiv', data, layout, {responsive: true, displayModeBar: false});
+        }
+
+        // ฟังก์ชันเมื่อเปลี่ยน Dropdown
+        function updateMapMode() {
+            const selector = document.getElementById('dataSelector');
+            drawMap(selector.value);
+        }
+
+        // ฟังก์ชัน Export รูปภาพ
+        function exportMap() {
+            Plotly.downloadImage('myDiv', {
+                format: 'png', 
+                width: 1200, 
+                height: 800, 
+                filename: 'Thailand_Map_2024'
+            });
+        }
+
+        // --- เริ่มต้นโหลดข้อมูล ---
         const geojsonUrl = 'https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json';
 
         fetch(geojsonUrl)
             .then(response => response.json())
             .then(geojson => {
+                globalGeojson = geojson;
+                globalProvinces = geojson.features.map(feature => feature.properties.name);
                 
-                const provinces = geojson.features.map(feature => feature.properties.name);
-                const missingProvinces = [];
-
-                const populationData = provinces.map(name => {
-                    // ตัดช่องว่างหน้าหลัง
-                    const cleanName = name.trim();
-                    const pop = realPopulationDB[cleanName];
-                    
-                    if (pop === undefined) {
-                        missingProvinces.push(cleanName); // เก็บชื่อที่หาไม่เจอ
-                        return 0;
-                    }
-                    return pop;
-                });
-
-                // แจ้งเตือนถ้ายังมีจังหวัดหายไป
-                if (missingProvinces.length > 0) {
-                    const errorBox = document.getElementById('error-box');
-                    errorBox.style.display = 'block';
-                    errorBox.innerHTML = `⚠️ ชื่อไม่ตรง: ${missingProvinces.join(', ')}`;
-                }
-
-                const data = [{
-                    type: "choroplethmapbox",
-                    geojson: geojson,
-                    locations: provinces,
-                    featureidkey: "properties.name",
-                    z: populationData,
-                    colorscale: [
-                        [0, '#eeeeee'],
-                        [0.01, '#FFEDA0'],
-                        [0.2, '#FED976'],
-                        [0.4, '#FEB24C'],
-                        [0.6, '#FD8D3C'],
-                        [0.8, '#E31A1C'],
-                        [1.0, '#800026']
-                    ],
-                    zmin: 100000,
-                    zmax: 3000000,
-                    marker: { opacity: 0.75, line: { width: 1, color: 'white' } },
-                    text: provinces,
-                    hovertemplate: "<b>%{text}</b><br>ประชากร: %{z:,} คน<extra></extra>"
-                }];
-
-                const layout = {
-                    margin: { r: 0, t: 0, l: 0, b: 0 },
-                    mapbox: {
-                        style: "carto-positron",
-                        center: { lat: 13.736717, lon: 100.523186 },
-                        zoom: 5.2
-                    }
-                };
-
-                Plotly.newPlot('myDiv', data, layout, {responsive: true});
+                // วาดครั้งแรก (Default: Population)
+                drawMap('pop');
             })
-            .catch(error => { console.error(error); });
+            .catch(error => console.error('Error:', error));
     </script>
 
 </body>
