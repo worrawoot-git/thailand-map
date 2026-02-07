@@ -2,40 +2,31 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Thailand Official Population Map 2024</title>
+    <title>Thailand Population Map 2024 (Fixed Layout)</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { margin: 0; padding: 0; font-family: 'Sarabun', sans-serif; }
         #myDiv { width: 100vw; height: 100vh; }
 
-        /* --- ปรับปรุงใหม่: ป้ายชื่อเล็กและอยู่มุมขวาล่าง --- */
+        /* --- ปรับปรุง: ขยับป้ายมาทางซ้าย ไม่ให้ทับแถบสี --- */
         .map-title {
             position: absolute;
-            bottom: 30px;  /* ย้ายมาติดด้านล่าง */
-            right: 20px;   /* ชิดขวา (พื้นที่ว่างอ่าวไทย/กัมพูชา) */
+            bottom: 40px;
+            right: 120px;  /* ขยับจากขอบขวามา 120px (หลบแถบสี) */
             z-index: 1000;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 10px 15px; /* ลดระยะห่างขอบ */
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-            text-align: right; /* จัดตัวหนังสือชิดขวา */
-            max-width: 250px; /* บีบความกว้างไม่ให้เกินนี้ */
+            background: rgba(255, 255, 255, 0.95);
+            padding: 12px 18px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            text-align: right;
+            max-width: 300px;
         }
         
-        .map-title h2 {
-            margin: 0;
-            font-size: 16px; /* ลดขนาดหัวข้อ */
-            color: #2c3e50;
-        }
-        
-        .map-title div {
-            font-size: 11px; /* ลดขนาดตัวหนังสือรอง */
-            color: #7f8c8d;
-            margin-top: 4px;
-        }
+        .map-title h2 { margin: 0; font-size: 18px; color: #2c3e50; }
+        .map-title div { font-size: 12px; color: #7f8c8d; margin-top: 5px; }
 
-        /* กล่องแจ้งเตือน error (ถ้ามี) อยู่ซ้ายล่าง เหมือนเดิม */
+        /* กล่องแจ้งเตือน (เผื่อยังมีจังหวัดไหนชื่อไม่ตรง) */
         #error-box {
             position: absolute;
             bottom: 30px;
@@ -58,91 +49,52 @@
     </div>
 
     <div id="error-box"></div>
-
     <div id="myDiv"></div>
 
     <script>
-        // ฐานข้อมูลเดิม (คงไว้เพื่อความถูกต้อง)
+        // ฐานข้อมูลประชากร (เพิ่ม "Buri Ram" และเช็คชื่ออื่นๆ)
         const realPopulationDB = {
-            "Bangkok": 5455020,
-            "Bangkok Metropolis": 5455020,
-            "Krung Thep Maha Nakhon": 5455020,
-            "Nakhon Ratchasima": 2620172,
-            "Ubon Ratchathani": 1867942,
-            "Chiang Mai": 1799019,
-            "Khon Kaen": 1772381,
-            "Chon Buri": 1635525, "Chonburi": 1635525,
-            "Buriram": 1563600,
-            "Udon Thani": 1555000,
-            "Nakhon Si Thammarat": 1540000,
-            "Songkhla": 1428000,
-            "Si Sa Ket": 1445000, "Sisaket": 1445000,
-            "Surin": 1368000,
-            "Roi Et": 1275519,
-            "Samut Prakan": 1370000,
-            "Chiang Rai": 1298000,
-            "Nonthaburi": 1310000,
-            "Sakon Nakhon": 1140000,
-            "Chaiyaphum": 1105008,
-            "Kalasin": 962444,
-            "Nakhon Pathom": 925000,
-            "Kanchanaburi": 896351,
-            "Rayong": 782171,
-            "Chachoengsao": 733131,
-            "Kamphaeng Phet": 700862,
-            "Yala": 552974,
-            "Chanthaburi": 536388,
-            "Chumphon": 504354,
-            "Krabi": 483855,
-            "Chai Nat": 313392, "Chainat": 313392,
-            "Ranong": 192927,
-            "Samut Songkhram": 186784,
-            "Phra Nakhon Si Ayutthaya": 834082, "Ayutthaya": 834082,
-            "Phichit": 521401,
-            "Nakhon Phanom": 717040,
-            "Saraburi": 648321,
-            "Loei": 638819,
-            "Phitsanulok": 844494,
-            "Trang": 638206,
-            "Phetchaburi": 483329,
-            "Sukhothai": 581374,
-            "Ratchaburi": 865807,
-            "Prachuap Khiri Khan": 560408,
-            "Phayao": 455496,
-            "Nan": 476727,
-            "Uttaradit": 441052,
-            "Phrae": 430669,
-            "Nong Bua Lam Phu": 509489, "Nong Bua Lamphu": 509489,
-            "Yasothon": 531542,
-            "Tak": 684140,
-            "Samut Sakhon": 602227,
-            "Mukdahan": 351658,
-            "Sa Kaeo": 561938,
-            "Lamphun": 399187,
-            "Phangnga": 267994, "Phang Nga": 267994,
-            "Phuket": 420993,
-            "Narathiwat": 819669,
-            "Pattani": 736733,
-            "Satun": 327734,
-            "Trat": 226922,
-            "Sing Buri": 202657, "Singburi": 202657,
-            "Ang Thong": 272587,
-            "Nakhon Nayok": 260406,
-            "Uthai Thani": 322624,
-            "Prachin Buri": 498456, "Prachinburi": 498456,
-            "Amnat Charoen": 372137,
+            // --- แก้ไขจุดที่มีปัญหา (Buriram) ---
+            "Buri Ram": 1563600,  // ชื่อใน GeoJSON มักจะเป็นแบบนี้
+            "Buriram": 1563600,   // ดักไว้เผื่อ
+            
+            // --- ภาคกลาง & กทม ---
+            "Bangkok": 5455020, "Bangkok Metropolis": 5455020,
+            "Samut Prakan": 1370000, "Nonthaburi": 1310000,
+            "Pathum Thani": 1219199, "Nakhon Pathom": 925000,
+            "Samut Sakhon": 602227, "Phra Nakhon Si Ayutthaya": 834082, "Ayutthaya": 834082,
+            "Saraburi": 648321, "Lop Buri": 735293, "Sing Buri": 202657,
+            "Chai Nat": 313392, "Ang Thong": 272587, "Nakhon Nayok": 260406,
+            "Samut Songkhram": 186784, "Suphan Buri": 825595, "Kanchanaburi": 896351,
+            "Ratchaburi": 865807, "Phetchaburi": 483329, "Prachuap Khiri Khan": 560408,
+
+            // --- ภาคเหนือ ---
+            "Chiang Mai": 1799019, "Chiang Rai": 1298000, "Lampang": 718790,
+            "Lamphun": 399187, "Phayao": 455496, "Nan": 476727,
+            "Phrae": 430669, "Mae Hong Son": 286000, "Uttaradit": 441052,
+            "Tak": 684140, "Sukhothai": 581374, "Phitsanulok": 844494,
+            "Phichit": 521401, "Kamphaeng Phet": 700862, "Phetchabun": 973386,
+            "Nakhon Sawan": 1021827, "Uthai Thani": 322624,
+
+            // --- ภาคอีสาน ---
+            "Nakhon Ratchasima": 2620172, "Khon Kaen": 1772381, "Ubon Ratchathani": 1867942,
+            "Udon Thani": 1555000, "Si Sa Ket": 1445000, "Surin": 1368000,
+            "Roi Et": 1275519, "Chaiyaphum": 1105008, "Sakon Nakhon": 1140000,
+            "Nakhon Phanom": 717040, "Kalasin": 962444, "Maha Sarakham": 944605,
+            "Mukdahan": 351658, "Yasothon": 531542, "Amnat Charoen": 372137,
+            "Nong Bua Lam Phu": 509489, "Nong Khai": 515433, "Loei": 638819,
             "Bueng Kan": 420280,
-            "Phetchabun": 973386,
-            "Maha Sarakham": 944605,
-            "Suphan Buri": 825595, "Suphanburi": 825595,
-            "Nong Khai": 515433,
-            "Lop Buri": 735293, "Lopburi": 735293,
-            "Lampang": 718790,
-            "Nakhon Sawan": 1021827,
-            "Surat Thani": 1075788,
-            "Pathum Thani": 1219199,
-            "Mae Hong Son": 286000,
-            "Phatthalung": 523000
+
+            // --- ภาคตะวันออก ---
+            "Chon Buri": 1635525, "Rayong": 782171, "Chachoengsao": 733131,
+            "Prachin Buri": 498456, "Sa Kaeo": 561938, "Chanthaburi": 536388, "Trat": 226922,
+
+            // --- ภาคใต้ ---
+            "Nakhon Si Thammarat": 1540000, "Songkhla": 1428000, "Surat Thani": 1075788,
+            "Narathiwat": 819669, "Pattani": 736733, "Yala": 552974,
+            "Trang": 638206, "Phatthalung": 523000, "Satun": 327734,
+            "Chumphon": 504354, "Ranong": 192927, "Phangnga": 267994, "Phang Nga": 267994,
+            "Phuket": 420993, "Krabi": 483855
         };
 
         const geojsonUrl = 'https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json';
@@ -155,15 +107,18 @@
                 const missingProvinces = [];
 
                 const populationData = provinces.map(name => {
+                    // ตัดช่องว่างหน้าหลัง
                     const cleanName = name.trim();
                     const pop = realPopulationDB[cleanName];
+                    
                     if (pop === undefined) {
-                        missingProvinces.push(name);
+                        missingProvinces.push(cleanName); // เก็บชื่อที่หาไม่เจอ
                         return 0;
                     }
                     return pop;
                 });
 
+                // แจ้งเตือนถ้ายังมีจังหวัดหายไป
                 if (missingProvinces.length > 0) {
                     const errorBox = document.getElementById('error-box');
                     errorBox.style.display = 'block';
