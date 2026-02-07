@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Thailand Population Density Map</title>
+    <title>Thailand Real Population Map</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
         body { margin: 0; padding: 0; }
@@ -14,61 +14,68 @@
     <div id="myDiv"></div>
 
     <script>
-        // 1. URL ของไฟล์ GeoJSON (ขอบเขตจังหวัด)
         const geojsonUrl = 'https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json';
 
-        // 2. ฟังก์ชันดึงข้อมูลและสร้างกราฟ
+        // --- ส่วนที่แก้ไข: ใส่ข้อมูลประชากรจริง (ตัวอย่างปี 66) ---
+        // คุณสามารถเพิ่มจังหวัดอื่นๆ ต่อท้ายได้ตามต้องการ
+        const realData = {
+            "Bangkok": 5494932,
+            "Nakhon Ratchasima": 2630058,
+            "Ubon Ratchathani": 1869840,
+            "Khon Kaen": 1784641,
+            "Chiang Mai": 1792474,
+            "Buriram": 1573230,
+            "Udon Thani": 1558528,
+            "Nakhon Si Thammarat": 1545147,
+            "Si Sa Ket": 1450333,
+            "Surin": 1370557,
+            "Songkhla": 1431536,
+            "Chon Buri": 1618066
+            // ... ถ้าจังหวัดไหนไม่มีในลิสต์นี้ จะแสดงเป็นสีเทา (0) ...
+        };
+
         fetch(geojsonUrl)
             .then(response => response.json())
             .then(geojson => {
                 
-                // ดึงรายชื่อจังหวัดจากไฟล์ GeoJSON
                 const provinces = geojson.features.map(feature => feature.properties.name);
 
-                // สร้างข้อมูลจำลอง (สุ่มตัวเลขประชากร)
-                // *ในการใช้งานจริง คุณสามารถแก้ส่วนนี้ให้ดึงข้อมูลจาก API อื่นได้*
+                // ดึงค่าจากตัวแปร realData มาใส่
                 const populationData = provinces.map(name => {
-                    let pop = Math.floor(Math.random() * (1500000 - 200000) + 200000);
-                    if (name === 'Bangkok') pop = 6000000; // ปรับให้ กทม. สูงพิเศษ
-                    return pop;
+                    // ถ้ามีชื่อในลิสต์ realData ให้ใช้ค่านั้น, ถ้าไม่มีให้เป็น 0
+                    return realData[name] || 0; 
                 });
 
-                // 3. ตั้งค่ากราฟ (Data & Layout)
                 const data = [{
                     type: "choroplethmapbox",
                     geojson: geojson,
                     locations: provinces,
-                    featureidkey: "properties.name", // Key ที่ตรงกับชื่อจังหวัดใน GeoJSON
+                    featureidkey: "properties.name",
                     z: populationData,
-                    colorscale: "Reds",
+                    colorscale: "Viridis", // เปลี่ยนโทนสีให้ดูเป็นทางการขึ้น
                     zmin: 0,
-                    zmax: 2000000,
-                    marker: { opacity: 0.6 },
-                    text: provinces, // ข้อความที่จะโชว์ตอน Hover
+                    zmax: 3000000, // ปรับสเกลสูงสุดที่ 3 ล้าน (เพื่อให้สีกระจายสวย)
+                    marker: { opacity: 0.7 },
+                    text: provinces,
                     hovertemplate: 
                         "<b>%{text}</b><br>" +
-                        "Population: %{z:,}<extra></extra>"
+                        "ประชากร: %{z:,} คน<extra></extra>"
                 }];
 
                 const layout = {
-                    title: {
-                        text: 'Thailand Population Density (Live JS)',
-                        y: 0.95
-                    },
+                    title: { text: 'จำนวนประชากรรายจังหวัด (ข้อมูลจริงบางส่วน)', y: 0.95 },
                     mapbox: {
-                        style: "carto-positron", // แบบแผนที่ (ไม่ต้องใช้ Token)
+                        style: "carto-positron",
                         center: { lat: 13.736717, lon: 100.523186 },
                         zoom: 5
                     },
                     margin: { r: 0, t: 0, l: 0, b: 0 }
                 };
 
-                // 4. สั่งวาดกราฟ
                 Plotly.newPlot('myDiv', data, layout, {responsive: true});
             })
-            .catch(error => console.error('Error loading GeoJSON:', error));
+            .catch(error => console.error('Error:', error));
     </script>
 
 </body>
 </html>
-
