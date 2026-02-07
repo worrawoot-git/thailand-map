@@ -2,48 +2,118 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Thailand Real Population Map</title>
+    <title>Thailand Real Population Map (2023)</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
-        body { margin: 0; padding: 0; }
+        body { margin: 0; padding: 0; font-family: 'Sarabun', sans-serif; }
         #myDiv { width: 100vw; height: 100vh; }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <div id="myDiv"></div>
 
     <script>
-        const geojsonUrl = 'https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json';
-
-        // --- ส่วนที่แก้ไข: ใส่ข้อมูลประชากรจริง (ตัวอย่างปี 66) ---
-        // คุณสามารถเพิ่มจังหวัดอื่นๆ ต่อท้ายได้ตามต้องการ
-        const realData = {
-            "Bangkok": 5494932,
+        // ข้อมูลประชากรรายจังหวัด (อ้างอิง: กรมการปกครอง สิ้นปี 2566)
+        // ชื่อ Key ต้องตรงกับ properties.name ในไฟล์ GeoJSON
+        const realPopulationDB = {
+            "Bangkok": 5471588,
             "Nakhon Ratchasima": 2630058,
             "Ubon Ratchathani": 1869840,
-            "Khon Kaen": 1784641,
-            "Chiang Mai": 1792474,
+            "Chiang Mai": 1797075,
+            "Khon Kaen": 1779373,
+            "Chon Buri": 1618066,
             "Buriram": 1573230,
             "Udon Thani": 1558528,
             "Nakhon Si Thammarat": 1545147,
             "Si Sa Ket": 1450333,
             "Surin": 1370557,
             "Songkhla": 1431536,
-            "Chon Buri": 1618066
-            // ... ถ้าจังหวัดไหนไม่มีในลิสต์นี้ จะแสดงเป็นสีเทา (0) ...
+            "Roi Et": 1284836,
+            "Chiang Rai": 1299735,
+            "Samut Prakan": 1372970,
+            "Chaiyaphum": 1113527,
+            "Sakon Nakhon": 1142981,
+            "Nakhon Sawan": 1021827,
+            "Nonthaburi": 1308092,
+            "Phetchabun": 973386,
+            "Kalasin": 972100,
+            "Surat Thani": 1075788,
+            "Nakhon Pathom": 926596,
+            "Pathum Thani": 1219199,
+            "Maha Sarakham": 944605,
+            "Suphan Buri": 825595,
+            "Kanchanaburi": 894542,
+            "Ratchaburi": 865807,
+            "Nong Khai": 515433,
+            "Lop Buri": 735293,
+            "Lampang": 718790,
+            "Phra Nakhon Si Ayutthaya": 834082,
+            "Phichit": 521401,
+            "Kamphaeng Phet": 708775,
+            "Nakhon Phanom": 717040,
+            "Chachoengsao": 729110,
+            "Rayong": 771765,
+            "Saraburi": 648321,
+            "Loei": 638819,
+            "Phitsanulok": 844494,
+            "Trang": 638206,
+            "Phetchaburi": 483329,
+            "Sukhothai": 581374,
+            "Chanthaburi": 536144,
+            "Ratchaburi": 865807,
+            "Prachuap Khiri Khan": 560408,
+            "Chumphon": 509670,
+            "Phayao": 455496,
+            "Nan": 476727,
+            "Uttaradit": 441052,
+            "Phrae": 430669,
+            "Nong Bua Lam Phu": 509489,
+            "Yasothon": 531542,
+            "Tak": 684140,
+            "Samut Sakhon": 602227,
+            "Mukdahan": 351658,
+            "Sa Kaeo": 561938,
+            "Lamphun": 399187,
+            "Phangnga": 267994,
+            "Krabi": 480057,
+            "Phuket": 420993,
+            "Yala": 548677,
+            "Narathiwat": 819669,
+            "Pattani": 736733,
+            "Ranong": 194372,
+            "Satun": 327734,
+            "Trat": 226922,
+            "Sing Buri": 202657,
+            "Ang Thong": 272587,
+            "Chainat": 318308,
+            "Nakhon Nayok": 260406,
+            "Samut Songkhram": 189453,
+            "Uthai Thani": 322624,
+            "Prachin Buri": 498456,
+            "Amnat Charoen": 372137,
+            "Bueng Kan": 420280
         };
+
+        const geojsonUrl = 'https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json';
 
         fetch(geojsonUrl)
             .then(response => response.json())
             .then(geojson => {
                 
+                // ดึงรายชื่อจังหวัดจากไฟล์ GeoJSON (เพื่อใช้เป็นแกนหลัก)
                 const provinces = geojson.features.map(feature => feature.properties.name);
 
-                // ดึงค่าจากตัวแปร realData มาใส่
+                // Map ข้อมูลจริงใส่เข้าไป
                 const populationData = provinces.map(name => {
-                    // ถ้ามีชื่อในลิสต์ realData ให้ใช้ค่านั้น, ถ้าไม่มีให้เป็น 0
-                    return realData[name] || 0; 
+                    // ดึงค่าจาก DB ถ้าหาไม่เจอให้ใส่ 0
+                    const pop = realPopulationDB[name];
+                    if (pop === undefined) {
+                        console.warn(`หาชื่อจังหวัดไม่เจอ: ${name} (อาจสะกดไม่ตรงกับ DB)`);
+                        return 0;
+                    }
+                    return pop;
                 });
 
                 const data = [{
@@ -52,10 +122,21 @@
                     locations: provinces,
                     featureidkey: "properties.name",
                     z: populationData,
-                    colorscale: "Viridis", // เปลี่ยนโทนสีให้ดูเป็นทางการขึ้น
+                    
+                    // ใช้โทนสี "Reds" หรือ "Viridis" ก็ได้
+                    colorscale: [
+                        [0, '#ffe5e5'],      // สีอ่อน (คนน้อย)
+                        [0.2, '#ffb3b3'],
+                        [0.4, '#ff6666'],
+                        [0.6, '#ff0000'],
+                        [0.8, '#b30000'],
+                        [1, '#660000']       // สีเข้ม (คนเยอะมาก เช่น กทม)
+                    ],
+                    
                     zmin: 0,
-                    zmax: 3000000, // ปรับสเกลสูงสุดที่ 3 ล้าน (เพื่อให้สีกระจายสวย)
-                    marker: { opacity: 0.7 },
+                    zmax: 3000000, // ตั้ง max ไว้ที่ 3 ล้าน (กทม. จะเข้มสุดทะลุเกณฑ์)
+                    
+                    marker: { opacity: 0.7, line: { width: 0.5, color: 'white' } },
                     text: provinces,
                     hovertemplate: 
                         "<b>%{text}</b><br>" +
@@ -63,13 +144,16 @@
                 }];
 
                 const layout = {
-                    title: { text: 'จำนวนประชากรรายจังหวัด (ข้อมูลจริงบางส่วน)', y: 0.95 },
+                    title: { 
+                        text: 'จำนวนประชากรรายจังหวัด (ข้อมูลจริงปี 2566)',
+                        font: { size: 24 }
+                    },
                     mapbox: {
                         style: "carto-positron",
                         center: { lat: 13.736717, lon: 100.523186 },
                         zoom: 5
                     },
-                    margin: { r: 0, t: 0, l: 0, b: 0 }
+                    margin: { r: 0, t: 50, l: 0, b: 0 }
                 };
 
                 Plotly.newPlot('myDiv', data, layout, {responsive: true});
